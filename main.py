@@ -1,10 +1,15 @@
 from fastapi import FastAPI, Body, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from fastmcp import FastMCP
 import uvicorn
 import aiohttp
 
 app = FastAPI()
+
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -13,11 +18,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Template and static files setup
+templates = Jinja2Templates(directory="templates")
+
+# Initialize MCP
 mcp = FastMCP("demo server for test")
 
-
+# Base URL for National Weather Service
 NWS_API_BASE = "https://api.weather.gov"
-
 
 # Helper for making async HTTP requests to the weather API
 async def make_nws_request(url):
@@ -30,7 +38,6 @@ async def make_nws_request(url):
         print("Error making request:", e)
         return None
 
-
 # Format the weather alert data
 def format_alert(feature):
     props = feature.get("properties", {})
@@ -38,12 +45,10 @@ def format_alert(feature):
     description = props.get("description", "No description")
     return f"**{headline}**\n{description}"
 
-
 # Tool: Multiply
 @mcp.tool()
 def multiply(a, b):
     return a * b
-
 
 # Tool: Get weather alerts for a state
 @mcp.tool()
@@ -60,12 +65,10 @@ async def get_alerts(state: str) -> str:
     alerts = [format_alert(feature) for feature in data["features"]]
     return "\n---\n".join(alerts)
 
-
 # REST endpoint: Multiply
 @app.post("/euron/mcp/multiply")
 def call_multiply(data: dict = Body(...)):
     return {"result": multiply(data.get("a", 0), data.get("b", 0))}
-
 
 # REST endpoint: Get Alerts
 @app.post("/euron/mcp/get_alerts")
@@ -77,12 +80,10 @@ async def call_get_alerts(request: Request):
     print(f"Alert result: {result}")
     return {"alerts": result}
 
-
-# Home route
-@app.get("/")
-def home():
-    return {"message": "Welcome to the FastMCP server!"}
-
+# Home route → renders frontend.html
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    return templates.TemplateResponse("frontend.html", {"request": request})
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
