@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FastMCP Tools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4361ee;
+      --primary-light: #eef2ff;
+      --secondary: #3f37c9;
+      --dark: #1a1a2e;
+      --light: #f8f9fa;
+      --success: #4cc9f0;
+      --warning: #f8961e;
+      --danger: #f72585;
+      --border-radius: 8px;
+      --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f5f7ff;
+      color: var(--dark);
+      line-height: 1.6;
+      max-width: 700px;
+      margin: 40px auto;
+      padding: 30px;
+      border-radius: var(--border-radius);
+    }
+    
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+    }
+    
+    h1 {
+      color: var(--primary);
+      text-align: center;
+      margin-bottom: 30px;
+      font-weight: 600;
+    }
+    
+    h2 {
+      color: var(--secondary);
+      margin-top: 0;
+      margin-bottom: 15px;
+      font-weight: 500;
+      font-size: 1.3rem;
+    }
+    
+    .section {
+      background: var(--primary-light);
+      padding: 20px;
+      border-radius: var(--border-radius);
+      margin-bottom: 25px;
+      transition: all 0.3s ease;
+    }
+    
+    .section:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    
+    input {
+      flex: 1;
+      min-width: 120px;
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+      border-radius: var(--border-radius);
+      font-size: 16px;
+      transition: border 0.3s;
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
+    }
+    
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+    
+    button:hover {
+      background-color: var(--secondary);
+      transform: translateY(-1px);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    #result, #alerts {
+      background: white;
+      padding: 15px;
+      border-radius: var(--border-radius);
+      margin-top: 15px;
+      border-left: 4px solid var(--primary);
+      font-family: monospace;
+      white-space: pre-wrap;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .loading {
+      color: #666;
+      font-style: italic;
+    }
+    
+    @media (max-width: 600px) {
+      body {
+        margin: 20px;
+        padding: 15px;
+      }
+      
+      .container {
+        padding: 20px;
+      }
+      
+      .input-group {
+        flex-direction: column;
+      }
+      
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>FastMCP Demo UI</h1>
+
+    <div class="section">
+      <h2>Multiply Two Numbers</h2>
+      <div class="input-group">
+        <input type="number" id="numA" placeholder="Enter first number" />
+        <input type="number" id="numB" placeholder="Enter second number" />
+      </div>
+      <button onclick="callMultiply()">Calculate Product</button>
+      <div id="result"></div>
+    </div>
+
+    <div class="section">
+      <h2>Get Weather Alerts</h2>
+      <div class="input-group">
+        <input type="text" id="stateCode" placeholder="Enter state code (e.g., CA)" maxlength="2" />
+      </div>
+      <button onclick="getAlerts()">Check for Alerts</button>
+      <div id="alerts"></div>
+    </div>
+  </div>
+
+  <script>
+    async function callMultiply() {
+      const a = parseFloat(document.getElementById("numA").value);
+      const b = parseFloat(document.getElementById("numB").value);
+      const resDiv = document.getElementById("result");
+      
+      if (isNaN(a) || isNaN(b)) {
+        resDiv.innerHTML = '<span style="color: var(--danger)">Please enter valid numbers</span>';
+        return;
+      }
+      
+      resDiv.innerHTML = '<span class="loading">Calculating product...</span>';
+
+      try {
+        const response = await fetch("https://lzmcpserver-c5cxg4bhenf4c9bz.centralindia-01.azurewebsites.net/euron/mcp/multiply", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ a, b })
+        });
+
+        const data = await response.json();
+        resDiv.innerHTML = `<strong>Result:</strong> ${data.result}`;
+      } catch (error) {
+        resDiv.innerHTML = `<span style="color: var(--danger)">Error: ${error.message}</span>`;
+      }
+    }
+
+    async function getAlerts() {
+      const state = document.getElementById("stateCode").value.toUpperCase();
+      const alertsDiv = document.getElementById("alerts");
+      
+      if (!state || state.length !== 2) {
+        alertsDiv.innerHTML = '<span style="color: var(--danger)">Please enter a valid 2-letter state code</span>';
+        return;
+      }
+      
+      alertsDiv.innerHTML = '<span class="loading">Fetching weather alerts...</span>';
+
+      try {
+        const response = await fetch("https://lzmcpserver-c5cxg4bhenf4c9bz.centralindia-01.azurewebsites.net/euron/mcp/get_alerts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ state })
+        });
+
+        const data = await response.json();
+        alertsDiv.innerHTML = `<strong>Weather Alerts for ${state}:</strong>\n\n${data.alerts}`;
+      } catch (error) {
+        alertsDiv.innerHTML = `<span style="color: var(--danger)">Error: ${error.message}</span>`;
+      }
+    }
+  </script>
+</body>
+</html>
